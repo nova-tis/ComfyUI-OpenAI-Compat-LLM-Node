@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 import base64
@@ -138,10 +139,26 @@ class OpenAILLMNode:
         except Exception as e:
             raise Exception(f"Failed to encode image: {str(e)}")
     
+    def _resolve_api_token(self, api_token):
+        token = (api_token or "").strip()
+        if token:
+            return token
+
+        env_token = (
+            os.getenv("OPENAI_API_KEY")
+            or os.getenv("OPENAI_COMPAT_API_KEY")
+            or os.getenv("OPENAI_TOKEN")
+        )
+        return (env_token or "").strip()
+
     def generate_text(self, prompt, endpoint, api_token, model="gpt-4-vision-preview", max_tokens=150, temperature=0.7, image=None, image_detail="auto"):
         try:
+            resolved_token = self._resolve_api_token(api_token)
+            if not resolved_token:
+                return ("Error: Missing API token. Provide one in the node or set OPENAI_API_KEY / OPENAI_COMPAT_API_KEY.",)
+
             headers = {
-                "Authorization": f"Bearer {api_token}",
+                "Authorization": f"Bearer {resolved_token}",
                 "Content-Type": "application/json"
             }
             
